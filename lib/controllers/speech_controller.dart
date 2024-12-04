@@ -6,6 +6,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 class SpeechController extends GetxController {
   var backgroundColor = Colors.black12.obs;
+  var textColor = Colors.white.obs;
   var isListening = false.obs;
   var errorMessage = ''.obs;
 
@@ -17,24 +18,23 @@ class SpeechController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    welcomeUser();
+    welcomeUser ();
   }
 
-  void welcomeUser() async {
+  void welcomeUser () async {
     await flutterTts.setLanguage("en-US");
     await flutterTts.setPitch(1);
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.setVolume(0.5);
-    await flutterTts.speak(
-        "Welcome User. Press the wavy button to say 'red' or 'blue' to change the background color");
+    await speak("Welcome User. Press the wavy button to say 'red' or 'blue' to change the background color");
   }
 
   void startListening() async {
     isListening.value = true;
     bool available = await speech.initialize();
 
-    _startNoSpeechTimer();
     if (available) {
+      _startNoSpeechTimer();
       speech.listen(onResult: (result) {
         handleSpeechResult(result.recognizedWords);
       });
@@ -56,24 +56,19 @@ class SpeechController extends GetxController {
     if (recognizedWords.isEmpty) {
       return;
     }
-    if (recognizedWords.toLowerCase() == "red") {
-      errorMessage.value = "";
+
+    recognizedWords = recognizedWords.toLowerCase();
+    if (recognizedWords == "red") {
       backgroundColor.value = Colors.red;
-      isListening.value = false;
-      await speak("Here is the red screen");
-    } else if (recognizedWords.toLowerCase() == "blue") {
       errorMessage.value = "";
+      await speak("Here is the red screen");
+    } else if (recognizedWords == "blue") {
       backgroundColor.value = Colors.blue;
-      isListening.value = false;
+      errorMessage.value = "";
       await speak("Here is the blue screen");
-    } else if (recognizedWords.toLowerCase() != "red" &&
-        recognizedWords.toLowerCase() != "blue" &&
-        recognizedWords.isNotEmpty) {
+    } else {
       errorMessage.value = "Please say 'red' or 'blue'";
       await speak("Please say 'red' or 'blue'");
-    } else {
-      errorMessage.value = "";
-      backgroundColor.value = Colors.white;
     }
 
     isListening.value = false;
@@ -84,8 +79,9 @@ class SpeechController extends GetxController {
   }
 
   void _startNoSpeechTimer() {
-    _noSpeechTimer =
-        Timer(const Duration(seconds: 3), () => _notifyNoSpeechDetected());
+    _noSpeechTimer = Timer(const Duration(seconds: 4), () {
+      _notifyNoSpeechDetected();
+    });
   }
 
   void _cancelNoSpeechTimer() {
@@ -94,7 +90,9 @@ class SpeechController extends GetxController {
 
   @override
   void dispose() {
+    _cancelNoSpeechTimer();
     speech.stop();
+    flutterTts.stop(); // Stop TTS if it's currently speaking
     super.dispose();
   }
 
